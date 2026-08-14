@@ -12,3 +12,8 @@
 ## Next
 - Phase C: frontend
 - Phase D: docker-compose 3 services
+
+## Frontend — accepted gaps (not fixing in draft)
+- Docker/VITE_API_URL → phase D
+- README → phase E
+- Optional: empty lessons .card, remove vite assets
