@@ -54,7 +54,7 @@
 | `subagent-driven-development` | — | Занадто складно |
 
 **Як викликати:** додай 1–2 рядки в промпт (slash не обов'язковий):
-`executing-plans: ONLY [крок]. Stop. verification-before-completion: give curl commands.`
+`executing-plans: ONLY [крок]. Stop. verification-before-completion: give Windows PowerShell Invoke-RestMethod commands.`
 
 ---
 
@@ -104,9 +104,70 @@ Read REQUIREMENTS.md and STEP3-DRAFT-GUIDE.md. We build DRAFT backend first.
 
 ## Фаза B — Backend (локально)
 
-**Ціль фази:** API на `localhost:4000`, база в Docker postgres, всі 9 ендпоінтів, curl зелений.
+**Ціль фази:** API на `localhost:4000`, база в Docker postgres, всі 9 ендпоінтів, API-тести зелені.
 
 **Що НЕ робимо в цій фазі:** frontend, docker-compose для backend, production compose.
+
+---
+
+### ⚠️ Windows PowerShell — як тестувати API (читай перед B5)
+
+**Це не баг коду.** На Windows PowerShell команда `curl` — **alias** для `Invoke-WebRequest`, не Unix curl.
+Синтаксис `\"title\"` з bash **не працює** → помилки `Port number was not a decimal number`.
+
+#### Два термінали
+
+| Термінал 1 | Термінал 2 |
+|---|---|
+| `cd backend` → `npm run dev` | тільки тести API |
+| **Не закривай.** Чекай: `Server started on port 4000` | не запускай `npm run dev` знову |
+
+#### EADDRINUSE (port 4000 already in use)
+
+Сервер **вже працює** — це ок, тестуй у терміналі 2.
+
+Якщо треба перезапустити:
+1. У терміналі 1: `Ctrl+C`
+2. Або: `Stop-Process -Id <PID> -Force` (PID з тексту помилки)
+3. Потім знову `npm run dev`
+
+#### `Failed to connect` (curl 7)
+
+Сервер **не запущений**. Запусти `npm run dev` в терміналі 1 і чекай старт.
+
+#### Рекомендований спосіб тестів — `Invoke-RestMethod`
+
+Копіюй блоки нижче в **термінал 2** (сервер уже працює).
+
+**Health (B1):**
+```powershell
+Invoke-RestMethod http://localhost:4000/health
+```
+
+**Курси (B5):**
+```powershell
+Invoke-RestMethod -Method POST -Uri http://localhost:4000/courses -ContentType "application/json" -Body '{"title":"JS Basics","description":"test"}'
+Invoke-RestMethod http://localhost:4000/courses
+Invoke-RestMethod http://localhost:4000/courses/1
+Invoke-RestMethod -Method POST -Uri http://localhost:4000/courses -ContentType "application/json" -Body '{"title":""}'
+Invoke-RestMethod -Method DELETE -Uri http://localhost:4000/courses/1
+```
+
+**Уроки (B6) — після B6:**
+```powershell
+Invoke-RestMethod -Method POST -Uri http://localhost:4000/courses -ContentType "application/json" -Body '{"title":"Test"}'
+Invoke-RestMethod -Method POST -Uri http://localhost:4000/courses/1/lessons -ContentType "application/json" -Body '{"title":"Lesson 1"}'
+Invoke-RestMethod -Method PATCH -Uri http://localhost:4000/lessons/1 -ContentType "application/json" -Body '{"isCompleted":true}'
+Invoke-RestMethod -Method PATCH -Uri http://localhost:4000/lessons/1 -ContentType "application/json" -Body '{"isCompleted":"true"}'
+```
+
+**Альтернатива — `curl.exe` (не `curl`):**
+```powershell
+curl.exe --% -X POST http://localhost:4000/courses -H "Content-Type: application/json" -d "{\"title\":\"JS Basics\"}"
+```
+`--%` зупиняє парсинг PowerShell.
+
+**Для Cursor:** у промптах проси «PowerShell `Invoke-RestMethod` commands», не bash `curl`.
 
 ---
 
@@ -161,9 +222,9 @@ npm run dev
 
 **Ти перевіряєш:**
 ```powershell
-curl http://localhost:4000/health
+Invoke-RestMethod http://localhost:4000/health
 ```
-→ `{"status":"ok"}`
+→ `status : ok` (або JSON з `ok`)
 
 **Якщо не працює:** systematic-debugging + paste error.
 
@@ -307,19 +368,21 @@ Use calculateProgress from REQUIREMENTS.md section 4 (0 lessons = 0%).
 Wire routes in index.js.
 
 NO lesson routes in this step.
-verification-before-completion: provide PowerShell curl commands for me to run.
+verification-before-completion: provide Windows PowerShell Invoke-RestMethod commands (not bash curl).
 ```
 
-**Ти перевіряєш (PowerShell):**
+**Перед тестом:** термінал 1 — `npm run dev` працює. Термінал 2 — команды ниже. См. § «Windows PowerShell» выше.
+
+**Ти перевіряєш (термінал 2, PowerShell):**
 ```powershell
-curl -X POST http://localhost:4000/courses -H "Content-Type: application/json" -d "{\"title\":\"JS Basics\",\"description\":\"test\"}"
-curl http://localhost:4000/courses
-curl http://localhost:4000/courses/1
-curl -X POST http://localhost:4000/courses -H "Content-Type: application/json" -d "{\"title\":\"\"}"
-curl -X DELETE http://localhost:4000/courses/1
+Invoke-RestMethod -Method POST -Uri http://localhost:4000/courses -ContentType "application/json" -Body '{"title":"JS Basics","description":"test"}'
+Invoke-RestMethod http://localhost:4000/courses
+Invoke-RestMethod http://localhost:4000/courses/1
+Invoke-RestMethod -Method POST -Uri http://localhost:4000/courses -ContentType "application/json" -Body '{"title":""}'
+Invoke-RestMethod -Method DELETE -Uri http://localhost:4000/courses/1
 ```
 
-Очікування: 201, список з progress 0, 400 на пустий title, 204 delete.
+Очікування: POST → курс з id; GET list → `progress: 0`; GET /1 → `lessons: []`; POST empty → помилка 400; DELETE → без body (204).
 
 ---
 
@@ -338,18 +401,18 @@ Implement routes/lessons.js:
 - DELETE /lessons/:id
 
 Do not change course routes logic.
-verification-before-completion: curl commands including boolean validation test.
+verification-before-completion: Windows PowerShell Invoke-RestMethod commands (not bash curl).
 ```
 
-**Ти перевіряєш:**
+**Ти перевіряєш (термінал 2):**
 ```powershell
-curl -X POST http://localhost:4000/courses -H "Content-Type: application/json" -d "{\"title\":\"Test\"}"
-curl -X POST http://localhost:4000/courses/1/lessons -H "Content-Type: application/json" -d "{\"title\":\"Lesson 1\"}"
-curl -X PATCH http://localhost:4000/lessons/1 -H "Content-Type: application/json" -d "{\"isCompleted\":true}"
-curl -X PATCH http://localhost:4000/lessons/1 -H "Content-Type: application/json" -d "{\"isCompleted\":\"true\"}"
+Invoke-RestMethod -Method POST -Uri http://localhost:4000/courses -ContentType "application/json" -Body '{"title":"Test"}'
+Invoke-RestMethod -Method POST -Uri http://localhost:4000/courses/1/lessons -ContentType "application/json" -Body '{"title":"Lesson 1"}'
+Invoke-RestMethod -Method PATCH -Uri http://localhost:4000/lessons/1 -ContentType "application/json" -Body '{"isCompleted":true}'
+Invoke-RestMethod -Method PATCH -Uri http://localhost:4000/lessons/1 -ContentType "application/json" -Body '{"isCompleted":"true"}'
 ```
 
-→ 400 на string "true".
+→ 400 на string `"true"` (Invoke-RestMethod покаже помилку з `error` в тексті).
 
 ---
 
@@ -361,7 +424,7 @@ curl -X PATCH http://localhost:4000/lessons/1 -H "Content-Type: application/json
 ```
 executing-plans: Step B7 ONLY — verify progress and cascade.
 
-Prove with curl sequence:
+Prove with Invoke-RestMethod sequence (see Windows PowerShell section):
 1) 4 lessons, 1 completed -> 25%
 2) 0 lessons -> 0% not NaN
 3) DELETE course removes all lessons
