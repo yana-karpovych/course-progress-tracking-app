@@ -63,7 +63,7 @@
 ### A1. Git
 
 ```powershell
-cd C:\Users\User\Projects\course-progress-tracker-draft
+cd D:\ykarpovych\employment\Stellartech\course-progress-tracker-draft
 git init
 ```
 
@@ -171,28 +171,47 @@ curl http://localhost:4000/health
 
 ---
 
-### B2. Prisma schema
+### B2. Prisma schema + .env
 
 **Що з'явиться:**
 ```
 backend/prisma/schema.prisma
 backend/src/prisma.js
+backend/.env          (локально, НЕ в git — копія з .env.example)
 ```
 
-**Superpowers:** executing-plans ✅
+**Важливо:** Prisma читає `DATABASE_URL` з `backend/.env` уже на цьому кроку
+(`prisma validate`, `prisma generate`). Postgres **ще не потрібен** для validate —
+лише файл `.env` має существувати. Контейнер postgres піднімаємо в B3; міграція в B4.
+
+**Superpowers:** executing-plans ✅ | verification-before-completion ✅
 
 **Промпт:**
 ```
-executing-plans: Step B2 ONLY — Prisma schema.
+executing-plans: Step B2 ONLY — Prisma schema + local .env.
 
 Add prisma + @prisma/client to package.json.
 Create schema.prisma with Course and Lesson exactly as REQUIREMENTS.md section 3 (onDelete Cascade).
 Create src/prisma.js — single PrismaClient export.
 
+Ensure backend/.env.example exists. Tell me to copy it to backend/.env
+(or create .env from .env.example — .env must NOT be committed).
+
 NO migrations yet. NO API routes.
+verification-before-completion: give command npx prisma validate.
 ```
 
-**Ти перевіряєш:** відкрий `schema.prisma` — 2 models, Cascade, поля title, isCompleted, etc.
+**Ти в терміналі:**
+```powershell
+cd backend
+copy .env.example .env
+npx prisma validate
+```
+
+**Ти перевіряєш:**
+- `schema.prisma` — 2 models, Cascade, поля title, isCompleted, etc.
+- `npx prisma validate` → «schema is valid» (postgres може ще не працювати)
+- `.env` **не** в git (`git status` не показує .env)
 
 ---
 
@@ -220,7 +239,7 @@ NO backend or frontend in this file.
 
 **Ти в терміналі:**
 ```powershell
-cd C:\Users\User\Projects\course-progress-tracker-draft
+cd D:\ykarpovych\employment\Stellartech\course-progress-tracker-draft
 docker compose -f docker-compose.dev.yml up -d
 docker ps
 ```
@@ -247,16 +266,18 @@ Do NOT implement routes.
 **Ти в терміналі:**
 ```powershell
 cd backend
-copy .env.example .env
 npx prisma migrate dev --name init
 ```
+
+(`.env` уже створений в B2 — не копіюй знову.)
 
 **Ти перевіряєш:**
 - без помилок
 - опційно: `npx prisma studio` — таблиці Course, Lesson
 
 **Типові помилки:**
-- `Can't reach database` → postgres не запущений або wrong DATABASE_URL
+- `Can't reach database` → postgres не запущений (зроби B3 спочатку) або wrong DATABASE_URL
+- `Environment variable not found: DATABASE_URL` → забули `.env` в B2
 - `localhost` vs `postgres` — тут **localhost** (бекенд локально, не в Docker)
 
 ---
