@@ -458,49 +458,470 @@ git push
 
 ---
 
-## Фаза C — Frontend (короткий порядок)
+## Фаза C — Frontend (детально)
 
-Новий чат або той самий + блок Superpowers. Модель composer.
+**Ціль:** React UI на `http://localhost:5173`, підключений до API `localhost:4000`.
 
-| Крок | Що | Superpowers |
-|---|---|---|
-| C1 | Vite React+TS в `frontend/`, proxy або API_URL 4000 | executing-plans |
-| C2 | types.ts, api.ts | executing-plans |
-| C3 | CoursesPage — список, форма, progress, delete | executing-plans |
-| C4 | CourseDetailsPage — уроки, checkbox, progress bar | executing-plans |
-| C5 | Edit course/lesson (optional) | executing-plans |
-| C6 | Loading + error states | executing-plans |
-| C7 | finishing-a-development-branch | finishing |
+**Два термінали під час розробки:**
 
-**Перевірка:** браузер `localhost:5173` (Vite) або 3000 — кліки по сценарію §11.
+| Термінал 1 | Термінал 2 |
+|---|---|
+| `cd backend` → `npm run dev` | `cd frontend` → `npm run dev` |
+| порт 4000 | порт 5173 (Vite) |
 
-**Промпт C1 пример:**
+**Перевірка фронта — в браузері** (не PowerShell), крім очистки БД.
+
+**Порядок важливий:** спочатку сторінки й API, **потім** C7 loading/error/empty (з правилами з REQUIREMENTS.md §6).
+
+### Superpowers у новому чаті
+
+Плагін може **не** підхопитись автоматично. На старті **кожного** нового Agent chat:
+
+1. Перевір `.cursor/settings.json` — `superpowers.enabled: true`
+2. Встав блок **C0** нижче (навіть якщо агент каже «не в REQUIREMENTS» — це в `AGENTS.md` і цьому гайді)
+3. Модель: **composer-2.5-fast**
+
+---
+
+### C0. Контекст + Superpowers (перше повідомлення)
+
+**Superpowers:** режим сесії (не відокремлений skill)
+
 ```
-executing-plans: Step C1 ONLY.
+Superpowers mode + executing-plans:
 
-Create frontend with Vite React+TypeScript in frontend/.
-Configure dev server to call backend at http://localhost:4000.
-Add react-router-dom. Plain CSS in index.css only.
+Read AGENTS.md, REQUIREMENTS.md (section 6 UI states), STEP3-DRAFT-GUIDE.md phase C.
 
-NO Docker yet. NO Tailwind.
-Read REQUIREMENTS.md section 6 for pages structure.
+Frontend draft only. NO Docker yet.
+Stack: Vite React+TypeScript, react-router-dom, plain CSS.
+API: http://localhost:4000 via Vite proxy /api or VITE_API_URL.
+
+One step at a time. Stop after each step for my browser verification.
+Do NOT use brainstorming, TDD, parallel agents.
+
+Confirm: 2 pages (/ and /courses/:id), loading/error/empty rules from REQUIREMENTS.md section 6.
+Do not write code yet.
+```
+
+**Ти перевіряєш:** агент перелічив 2 сторінки і UI rules.
+
+---
+
+### C1. Vite scaffold + proxy
+
+**Що з'явиться:**
+```
+frontend/
+  package.json, vite.config.ts, index.html
+  src/main.tsx, src/App.tsx (мінімальний)
+```
+
+**Superpowers:** executing-plans ✅ | verification-before-completion ✅
+
+**Промпт:**
+```
+executing-plans: Step C1 ONLY — Vite React+TypeScript in frontend/.
+
+- npm create vite@latest style setup (react-ts)
+- vite.config: proxy /api -> http://localhost:4000 (rewrite /api to backend paths)
+- Or VITE_API_URL=http://localhost:4000 — pick one approach, document in comment
+- react-router-dom dependency
+- Plain src/index.css — container max-width, basic card/button styles only
+- NO Tailwind. NO UI libraries. NO Docker.
+
+Stop. List files and dev command.
+verification-before-completion: npm run dev should open on 5173.
+```
+
+**Ти перевіряєш:**
+```powershell
+cd D:\ykarpovych\employment\Stellartech\course-progress-tracker-draft\frontend
+npm install
+npm run dev
+```
+Браузер: `http://localhost:5173` — сторінка відкривається (може бути placeholder).
+
+---
+
+### C2. types.ts + api.ts
+
+**Що з'явиться:**
+```
+frontend/src/types.ts
+frontend/src/api.ts   (fetch wrapper, ApiError class)
+```
+
+**Superpowers:** executing-plans ✅
+
+**Промпт:**
+```
+executing-plans: Step C2 ONLY.
+
+Create types.ts — Course and Lesson types per REQUIREMENTS.md section 3.
+Create api.ts:
+- ApiError with status and message
+- fetch wrapper reading JSON errors from { error: string }
+- Functions: getCourses, getCourse, createCourse, updateCourse, deleteCourse,
+  getLessons, createLesson, updateLesson, deleteLesson
+
+Use API_BASE from env or /api proxy. NO page components yet.
+```
+
+**Ти перевіряєш:** файли є, імпорти без червоних помилок у редакторі.
+
+---
+
+### C3. Routing + layout
+
+**Що з'явиться:**
+```
+frontend/src/App.tsx — routes / and /courses/:id
+frontend/src/pages/ — placeholder pages or empty shells
+```
+
+**Superpowers:** executing-plans ✅
+
+**Промпт:**
+```
+executing-plans: Step C3 ONLY.
+
+Wire react-router-dom in App.tsx:
+- / -> CoursesPage (can be minimal shell)
+- /courses/:id -> CourseDetailsPage (minimal shell)
+
+Add main layout in index.css. Pages show page title only for now.
+NO full CRUD yet.
+```
+
+**Ти перевіряєш:** браузер `/` і `/courses/1` — різні заголовки, без 404 router.
+
+---
+
+### C4. CoursesPage — список, create, delete, progress
+
+**Superpowers:** executing-plans ✅ | verification-before-completion ✅
+
+**Промпт:**
+```
+executing-plans: Step C4 ONLY — CoursesPage core features.
+
+Implement CoursesPage:
+- Load courses on mount
+- CourseForm: create course (title, description)
+- List: title, description, ProgressBar, link Open, Delete with confirm
+- Optional: Edit course (PATCH) inline or modal — per REQUIREMENTS optional
+
+Use ProgressBar component (gray outer, green inner width %).
+
+Do NOT implement full error/empty state machine yet — basic loading text OK.
+Read REQUIREMENTS.md section 6 for fields to show.
+```
+
+**Ти перевіряєш (бекенд + фронт running):**
+1. `http://localhost:5173/` — створити курс
+2. Курс у списку, progress 0%
+3. Delete — курс зникає
+
+---
+
+### C5. CourseDetailsPage — уроки, checkbox, progress
+
+**Superpowers:** executing-plans ✅ | verification-before-completion ✅
+
+**Промпт:**
+```
+executing-plans: Step C5 ONLY — CourseDetailsPage core.
+
+Implement:
+- Load course by id (GET /courses/:id with lessons embedded)
+- ProgressBar at top
+- LessonForm add lesson
+- LessonList: checkbox isCompleted -> PATCH /lessons/:id
+- Delete lesson, optional edit lesson title
+- Link back to /
+
+Components: LessonForm, LessonList, ProgressBar, reuse LoadingMessage if exists.
+
+Basic loading only — full error UI in C7.
+```
+
+**Ти перевіряєш:**
+1. Open course → add 2 lessons
+2. Checkbox → progress changes
+3. Delete lesson → progress updates
+
+---
+
+### C6. Optional edit (якщо ще не в C4/C5)
+
+**Superpowers:** executing-plans ✅
+
+**Промпт:**
+```
+executing-plans: Step C6 ONLY — edit course title/description and lesson title if not done.
+
+Minimal UI: Edit button toggles inline form. PATCH endpoints.
+Stop if already implemented.
+```
+
+**Ти перевіряєш:** edit course name on list page, edit lesson title on details.
+
+---
+
+### C7. Loading, error, empty states (КРИТИЧНИЙ КРОК)
+
+**Чому окремий крок:** без явних правил AI показує форму при мертвому бекенді, ховає empty state, пуста 404.
+
+**Superpowers:** executing-plans ✅ | verification-before-completion ✅
+
+**Промпт:**
+```
+executing-plans: Step C7 ONLY — UI states per REQUIREMENTS.md section 6 "UI states — точні правила".
+
+Implement EXACTLY:
+
+CoursesPage:
+- hasLoaded flag
+- showForm ONLY when hasLoaded && !loadError && not editing
+- loadError: ErrorMessage + Retry, NO create form
+- empty: visible card "No courses yet" when hasLoaded && !loadError && courses.length===0
+- actionError: separate from loadError; keep list visible if already loaded
+
+CourseDetailsPage:
+- loadError: "Course unavailable" heading + ErrorMessage + Retry + Back link — NOT blank page
+- empty lessons: "No lessons yet" in LessonList
+
+Reuse ErrorMessage, LoadingMessage components.
+Do not change API or backend.
+verification-before-completion: numbered browser test checklist.
+```
+
+**Ти перевіряєш (чекліст C7):**
+
+| # | Дія | Очікування |
+|---|---|---|
+| 1 | Backend up → `Invoke-RestMethod http://localhost:4000/health` | ok |
+| 2 | Stop backend → refresh `http://localhost:5173/` | Loading → **red error + Retry**, **NO** create form |
+| 3 | Start backend → Retry | список знову |
+| 4 | `Invoke-RestMethod http://localhost:4000/courses` → `[]` | порожній масив |
+| 4b | Refresh `/` | форма + карточка **No courses yet** |
+| 5 | Backend up, list loaded → stop backend → submit create | action error, list still visible |
+| 6 | Open `/courses/99999` | Back + **Course unavailable** + message + Retry |
+| 7 | Real course, 0 lessons | **No lessons yet** |
+
+**Якщо крок 4 «нічого»:** у БД ще є курси — видали через UI або:
+```powershell
+Invoke-RestMethod http://localhost:4000/courses
+# delete each via Invoke-RestMethod -Method DELETE ...
+```
+
+**Після змін:** hard refresh браузера (Ctrl+F5) — HMR інколи не все підхоплює.
+
+---
+
+### C8. Production build
+
+**Superpowers:** verification-before-completion ✅
+
+**Промпт:**
+```
+verification-before-completion: confirm frontend builds.
+
+Tell me to run npm run build in frontend/. Fix only build errors, no new features.
+```
+
+**Ти:**
+```powershell
+cd D:\ykarpovych\employment\Stellartech\course-progress-tracker-draft\frontend
+npm run build
+```
+
+**Зелений:** build completes without errors.
+
+---
+
+### C9. Закриття фази frontend
+
+**Superpowers:** finishing-a-development-branch ✅
+
+**Промпт:**
+```
+finishing-a-development-branch: frontend phase done.
+
+Compare UI vs REQUIREMENTS.md section 6. List gaps.
+Suggest git commit message. Do NOT start Docker yet.
+```
+
+**Ти:**
+```powershell
+cd D:\ykarpovych\employment\Stellartech\course-progress-tracker-draft
+git add frontend/
+git commit -m "feat(frontend): courses UI with loading and error states"
+git push
 ```
 
 ---
 
-## Фаза D — Docker Compose (production)
+## Фаза D — Docker Compose (детально)
 
-| Крок | Що | Superpowers |
-|---|---|---|
-| D1 | backend/Dockerfile + migrate on start | executing-plans |
-| D2 | frontend/Dockerfile | executing-plans |
-| D3 | docker-compose.yml 3 services, volumes, CORS | executing-plans |
-| D4 | `docker compose up --build` | verification-before-completion |
-| D5 | finishing-a-development-branch | finishing |
+**Ціль:** `docker compose up --build` → frontend :3000, backend :4000, postgres :5432.
 
-**DATABASE_URL в compose для backend:** host = `postgres` (не localhost).
+**Перед D:** фази B і C зелені локально.
 
-**Перевірка:** §11 пункт 1, 14 — down/up, дані живі.
+**Важливо:** у compose `DATABASE_URL` host = **`postgres`**, не `localhost`.
+
+**Зупини** локальні `npm run dev` перед compose (порти 4000/5173/5432).
+
+---
+
+### D0. Superpowers блок (новий чат або продовження)
+
+```
+Superpowers mode + executing-plans:
+
+Read AGENTS.md, REQUIREMENTS.md sections 7-8, STEP3-DRAFT-GUIDE.md phase D.
+
+Implement Docker only. Do not change API logic unless required for container startup.
+Backend JS (not TS). Prisma migrate on backend container start.
+3 services: frontend, backend, postgres.
+Ports: 3000, 4000, 5432.
+One step at a time.
+```
+
+---
+
+### D1. backend/Dockerfile + migrate on start
+
+**Що з'явиться:**
+```
+backend/Dockerfile
+backend/.dockerignore
+```
+
+**Superpowers:** executing-plans ✅
+
+**Промпт:**
+```
+executing-plans: Step D1 ONLY — backend Dockerfile.
+
+- Node 20 alpine
+- Copy package.json, prisma, src
+- npm install (production or ci)
+- prisma generate
+- CMD: run prisma migrate deploy then node src/index.js
+- EXPOSE 4000
+- .dockerignore: node_modules
+
+NO frontend Dockerfile yet. NO docker-compose.yml yet.
+```
+
+**Ти перевіряєш:** файли є, Dockerfile читається логічно.
+
+---
+
+### D2. frontend/Dockerfile
+
+**Superpowers:** executing-plans ✅
+
+**Промпт:**
+```
+executing-plans: Step D2 ONLY — frontend Dockerfile.
+
+- Build stage: npm ci, npm run build
+- Serve stage: nginx or node serve static from dist
+- EXPOSE 3000 (map to 80 inside if nginx)
+- frontend/.dockerignore
+
+Configure nginx or env so API calls reach backend:4000 from browser
+(production: may need VITE_API_URL at build time or nginx proxy /api).
+
+NO docker-compose.yml yet.
+```
+
+**Ти перевіряєш:** Dockerfile + .dockerignore створені.
+
+---
+
+### D3. docker-compose.yml (3 сервіси)
+
+**Superpowers:** executing-plans ✅ | verification-before-completion ✅
+
+**Промпт:**
+```
+executing-plans: Step D3 ONLY — docker-compose.yml at project root.
+
+Services:
+- postgres:16, volume postgres_data, port 5432
+- backend: build ./backend, port 4000, DATABASE_URL=postgresql://postgres:postgres@postgres:5432/courses_db
+- frontend: build ./frontend, port 3000
+- depends_on: backend waits postgres, frontend waits backend
+- CORS already on backend for http://localhost:3000
+
+Remove or keep docker-compose.dev.yml for local-only postgres — document in comment.
+
+Stop. Do not run compose yet — give me the up command.
+```
+
+**Ти перевіряєш:** відкрий `docker-compose.yml` — 3 services, volume, правильний DATABASE_URL host `postgres`.
+
+---
+
+### D4. Запуск compose
+
+**Superpowers:** verification-before-completion ✅
+
+**Ти (не Cursor):**
+```powershell
+cd D:\ykarpovych\employment\Stellartech\course-progress-tracker-draft
+docker compose down
+docker compose up --build
+```
+
+**Ти перевіряєш:**
+1. `http://localhost:3000` — UI
+2. `Invoke-RestMethod http://localhost:4000/health` — ok
+3. Сценарій §11: create course, lessons, progress, delete
+
+**Типові помилки:**
+- backend crash: migrate failed → postgres not ready → add healthcheck / retry
+- CORS → додати `http://localhost:3000` на backend
+- frontend API 404 → VITE_API_URL або proxy в nginx
+- `DATABASE_URL` з localhost у backend container → змінити на postgres
+
+**При помилці:** systematic-debugging + paste logs.
+
+---
+
+### D5. Persistence (дані живуть)
+
+**Superpowers:** verification-before-completion ✅
+
+**Ти:**
+1. Створи курс у UI
+2. `docker compose down`
+3. `docker compose up` (без --build якщо не треба)
+4. Курс на місці
+
+**Відео:** цей крок хороший для демо «store permanently».
+
+---
+
+### D6. Закриття Docker
+
+**Superpowers:** finishing-a-development-branch ✅
+
+**Промпт:**
+```
+finishing-a-development-branch: Docker phase done.
+Gaps vs REQUIREMENTS.md section 8. Commit message. README run instructions draft.
+```
+
+**Ти:**
+```powershell
+git add backend/Dockerfile frontend/Dockerfile docker-compose.yml .dockerignore
+git commit -m "chore(docker): compose for frontend, backend, and postgres"
+git push
+```
 
 ---
 

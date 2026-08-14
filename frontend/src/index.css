@@ -1,0 +1,138 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+  line-height: 1.5;
+  color: #333;
+  background: #f5f5f5;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+h1,
+h2 {
+  margin: 0 0 1rem;
+}
+
+a {
+  color: #2563eb;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+button {
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+input,
+textarea {
+  display: block;
+  width: 100%;
+  padding: 0.5rem;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+}
+
+.progress-bar {
+  background: #e5e5e5;
+  border-radius: 4px;
+  height: 1rem;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  background: #22c55e;
+  height: 100%;
+}
+
+.error {
+  color: #b91c1c;
+}
+
+.loading {
+  color: #666;
+}
+
+.course-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.actions a {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  text-decoration: none;
+  background: #fff;
+  color: #2563eb;
+}
+
+.progress {
+  margin-top: 0.5rem;
+}
+
+.progress-label {
+  margin: 0 0 0.25rem;
+  font-size: 0.875rem;
+  color: #666;
+}
+
+label {
+  display: block;
+  margin-bottom: 0.75rem;
+}
+
+.lesson-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.lesson-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+}
+
+.lesson-checkbox input {
+  width: auto;
+  margin: 0;
+}
+
+.lesson-title.completed {
+  text-decoration: line-through;
+  color: #666;
+}
+
+.empty-state {
+  color: #666;
+  font-style: italic;
+  text-align: center;
+}

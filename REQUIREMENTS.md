@@ -401,7 +401,34 @@ app.patch('/lessons/:id', async (request, response) => {
 - якщо запит упав — текст помилки і можливість повторити
 - порожній список — «No courses yet»
 
----
+### UI states — точні правила (читай Cursor перед C7)
+
+Ці правила **не в оригінальному ТЗ**, але без них AI часто робить «форму при мертвому бекенді» або «пусту 404».
+
+**Сторінка курсів `/`**
+
+| Стан | Що показувати |
+|---|---|
+| `loading` (перший load) | `Loading...`, **без** форми створення |
+| `loadError` (бекенд down / network) | червона помилка + **Retry**, **без** форми «New course» |
+| `hasLoaded && !loadError && courses.length === 0` | форма створення + **видима** карточка `No courses yet` |
+| `hasLoaded && courses.length > 0` | форма + список курсів |
+| `actionError` (create/update/delete failed) | помилка + Retry; **список залишається**, якщо був загружен; Retry **очищає** action error і перезагружає дані |
+
+Технічно: `showForm = hasLoaded && !loadError && not editing`.
+
+**Сторінка курсу `/courses/:id`**
+
+| Стан | Що показувати |
+|---|---|
+| `loading` | `Loading...` |
+| `loadError` (404 або network) | `← Back`, заголовок **Course unavailable**, текст помилки, **Retry** — **не** пуста сторінка |
+| `course loaded, lessons.length === 0` | `No lessons yet` |
+| `actionError` | помилка; дані курсу залишаються на екрані |
+
+**Dev:** фронт `http://localhost:5173` (Vite), API `http://localhost:4000`. Vite proxy `/api` → `4000` або `VITE_API_URL`.
+
+**Перевірка фронта — в браузері**, не PowerShell (крім очистки БД).
 
 ## 7. База даних
 
