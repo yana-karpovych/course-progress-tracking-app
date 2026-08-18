@@ -1,12 +1,55 @@
 # Course Progress Tracker
 
-Full-stack app for tracking course and lesson progress.
+Course Progress Tracker is a full-stack React + TypeScript application for managing courses and tracking lesson completion.
 
-## How to Run
+The application allows users to create, edit, and delete courses and lessons, mark lessons as complete, and view progress calculated on the backend. It interacts with a REST API backed by PostgreSQL, demonstrating asynchronous requests, state management, and modern full-stack development practices.
 
-### Docker (recommended)
+## Technologies Used
 
-From the project root:
+### Core
+
+- React
+- TypeScript
+- Vite
+- Node.js
+- Express
+
+### State Management
+
+- React Hooks
+
+### Styling
+
+- CSS
+
+### Data / API
+
+- REST API
+- Fetch API
+- Prisma ORM
+- PostgreSQL
+
+### Infrastructure
+
+- Docker
+- Docker Compose
+- nginx
+
+### Development & Tooling
+
+- react-router-dom
+- Oxlint
+
+## Getting Started
+
+### Clone the repository
+
+```bash
+git clone <repository-url>
+cd course-progress-tracker
+```
+
+### Run with Docker
 
 ```bash
 docker compose down
@@ -19,11 +62,7 @@ docker compose up --build
 | Backend  | http://localhost:4000 |
 | Postgres | localhost:5432 |
 
-Health check (PowerShell):
-
-```powershell
-Invoke-RestMethod http://localhost:4000/health
-```
+The app will be available at: http://localhost:3000
 
 Stop containers:
 
@@ -31,74 +70,45 @@ Stop containers:
 docker compose down
 ```
 
-Data persists in the `postgres_data` Docker volume. To verify: create a course, run `docker compose down`, then `docker compose up` — the course should still be there.
+Data persists in the `postgres_data` Docker volume.
 
-### Local development
+## Features
 
-Postgres only in Docker:
+### Course Management
 
-```bash
-docker compose -f docker-compose.dev.yml up
-```
+- Create new courses
+- Edit existing courses
+- Delete courses
+- View course list with progress summary
 
-Backend:
+### Lesson Management
 
-```bash
-cd backend
-cp .env.example .env   # DATABASE_URL uses localhost
-npm install
-npx prisma migrate dev
-npm run dev
-```
+- Add lessons to a course
+- Edit lesson title and description
+- Delete lessons
+- Toggle lesson completion status
 
-Frontend:
+### Progress Tracking
 
-```bash
-cd frontend
-npm install
-npm run dev
-```
+- Progress calculated on the backend
+- Real-time progress updates in the UI
+- Handles edge case: 0 lessons = 0% progress
 
-Vite dev server proxies `/api` to `http://localhost:4000`.
+### User Experience
 
-## Technologies
+- Two-page navigation (course list and course details)
+- Loading indicators during API requests
+- Error handling and validation messages
+- Responsive layout
 
-- **Backend:** Node.js, Express, Prisma, PostgreSQL
-- **Frontend:** React, TypeScript, Vite, react-router-dom
-- **Docker:** Docker Compose (frontend, backend, postgres)
+### API
 
-## Docker
-
-- `backend/Dockerfile` — Node 20 Alpine; runs `prisma migrate deploy` then starts the API on port 4000
-- `frontend/Dockerfile` — multi-stage build; nginx serves static files on port 3000 and proxies `/api` to the backend service
-- `docker-compose.yml` — three services with `postgres_data` volume and `depends_on` startup order
-- `docker-compose.dev.yml` — local-only Postgres for npm-based development
-
-Inside Compose, the backend uses:
-
-```txt
-DATABASE_URL=postgresql://postgres:postgres@postgres:5432/courses_db
-```
-
-## API Endpoints
-
-<!-- TODO: list endpoints before submission -->
-
-## Database
-
-<!-- TODO: describe Course / Lesson models before submission -->
-
-## What Is Completed
-
-- [x] REST API with course and lesson CRUD
-- [x] Progress calculated on the backend
-- [x] React UI (courses list, course details, lesson completion)
-- [x] Docker Compose setup (frontend :3000, backend :4000, postgres :5432)
-
-## What Is Not Completed
-
-<!-- TODO: fill before submission -->
-
-## AI Usage Report
-
-<!-- TODO: tool used, prompts, what was edited manually, what was difficult -->
+- `GET /courses` — list courses with progress
+- `GET /courses/:id` — course details with lessons
+- `POST /courses` — create course
+- `PATCH /courses/:id` — update course
+- `DELETE /courses/:id` — delete course and lessons
+- `GET /courses/:courseId/lessons` — list lessons
+- `POST /courses/:courseId/lessons` — create lesson
+- `PATCH /lessons/:id` — update lesson
+- `DELETE /lessons/:id` — delete lesson
