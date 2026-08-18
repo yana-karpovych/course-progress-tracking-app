@@ -162,18 +162,18 @@ function CourseDetailsPage() {
 
       {!loading && course && (
         <>
-          <h1>{course.title}</h1>
-          {course.description && <p>{course.description}</p>}
+          <section className="card course-overview">
+            <h1>{course.title}</h1>
+            {course.description && (
+              <p className="course-description">{course.description}</p>
+            )}
 
-          <ProgressBar
-            progress={course.progress ?? 0}
-            completed={course.completedLessons ?? 0}
-            total={course.totalLessons ?? 0}
-          />
-
-          {editingLessonId === null && (
-            <LessonForm onSubmit={handleCreateLesson} submitting={submitting} />
-          )}
+            <ProgressBar
+              progress={course.progress ?? 0}
+              completed={course.completedLessons ?? 0}
+              total={course.totalLessons ?? 0}
+            />
+          </section>
 
           {actionError && (
             <ErrorMessage
@@ -185,19 +185,35 @@ function CourseDetailsPage() {
             />
           )}
 
-          <h2>Lessons</h2>
-          <LessonList
-            lessons={lessons}
-            editingId={editingLessonId}
-            updatingId={updatingId}
-            savingId={savingId}
-            deletingId={deletingId}
-            onStartEdit={setEditingLessonId}
-            onCancelEdit={() => setEditingLessonId(null)}
-            onSaveEdit={handleSaveLessonEdit}
-            onToggleComplete={handleToggleComplete}
-            onDelete={handleDeleteLesson}
-          />
+          <section className="section-block lessons-section">
+            <h2 className="section-title">Lessons</h2>
+            <p className="section-hint">
+              Add lessons below, then check them off as you complete each one.
+            </p>
+
+            <div className="lessons-panel card">
+              {editingLessonId === null && (
+                <LessonForm
+                  embedded
+                  onSubmit={handleCreateLesson}
+                  submitting={submitting}
+                />
+              )}
+
+              <LessonList
+                lessons={lessons}
+                editingId={editingLessonId}
+                updatingId={updatingId}
+                savingId={savingId}
+                deletingId={deletingId}
+                onStartEdit={setEditingLessonId}
+                onCancelEdit={() => setEditingLessonId(null)}
+                onSaveEdit={handleSaveLessonEdit}
+                onToggleComplete={handleToggleComplete}
+                onDelete={handleDeleteLesson}
+              />
+            </div>
+          </section>
         </>
       )}
     </main>

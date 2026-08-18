@@ -108,7 +108,12 @@ function CoursesPage() {
 
   return (
     <main>
-      <h1>Courses</h1>
+      <header className="page-header">
+        <h1>Courses</h1>
+        <p className="page-intro">
+          Create courses and track how many lessons you have completed.
+        </p>
+      </header>
 
       {loading && <LoadingMessage />}
 
@@ -117,7 +122,10 @@ function CoursesPage() {
       )}
 
       {showForm && (
-        <CourseForm onSubmit={handleCreate} submitting={submitting} />
+        <section className="section-block">
+          <h2 className="section-title">Add a course</h2>
+          <CourseForm onSubmit={handleCreate} submitting={submitting} />
+        </section>
       )}
 
       {actionError && (
@@ -131,51 +139,59 @@ function CoursesPage() {
       )}
 
       {showEmptyState && (
-        <div className="card empty-state">No courses yet</div>
+        <div className="card empty-state">
+          No courses yet. Use the form above to create your first course.
+        </div>
       )}
 
       {hasLoaded && courses.length > 0 && (
-        <ul className="course-list">
-          {courses.map((course) => (
-            <li key={course.id} className="card">
-              {editingId === course.id ? (
-                <CourseForm
-                  initialTitle={course.title}
-                  initialDescription={course.description}
-                  heading="Edit course"
-                  submitLabel="Save"
-                  submittingLabel="Saving..."
-                  submitting={savingId === course.id}
-                  onCancel={() => setEditingId(null)}
-                  onSubmit={(data) => handleUpdate(course.id, data)}
-                />
-              ) : (
-                <>
-                  <h2>{course.title}</h2>
-                  {course.description && <p>{course.description}</p>}
-                  <ProgressBar
-                    progress={course.progress ?? 0}
-                    completed={course.completedLessons ?? 0}
-                    total={course.totalLessons ?? 0}
+        <section className="section-block">
+          <h2 className="section-title">Your courses</h2>
+          <ul className="course-list">
+            {courses.map((course) => (
+              <li key={course.id} className="card course-card">
+                {editingId === course.id ? (
+                  <CourseForm
+                    initialTitle={course.title}
+                    initialDescription={course.description}
+                    heading="Edit course"
+                    submitLabel="Save"
+                    submittingLabel="Saving..."
+                    submitting={savingId === course.id}
+                    embedded
+                    onCancel={() => setEditingId(null)}
+                    onSubmit={(data) => handleUpdate(course.id, data)}
                   />
-                  <div className="actions">
-                    <Link to={`/courses/${course.id}`}>Open</Link>
-                    <button type="button" onClick={() => setEditingId(course.id)}>
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(course.id)}
-                      disabled={deletingId === course.id}
-                    >
-                      {deletingId === course.id ? 'Deleting...' : 'Delete'}
-                    </button>
-                  </div>
-                </>
-              )}
-            </li>
-          ))}
-        </ul>
+                ) : (
+                  <>
+                    <h3 className="course-title">{course.title}</h3>
+                    {course.description && (
+                      <p className="course-description">{course.description}</p>
+                    )}
+                    <ProgressBar
+                      progress={course.progress ?? 0}
+                      completed={course.completedLessons ?? 0}
+                      total={course.totalLessons ?? 0}
+                    />
+                    <div className="actions">
+                      <Link to={`/courses/${course.id}`}>Open course</Link>
+                      <button type="button" onClick={() => setEditingId(course.id)}>
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(course.id)}
+                        disabled={deletingId === course.id}
+                      >
+                        {deletingId === course.id ? 'Deleting...' : 'Delete'}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
     </main>
   )

@@ -10,6 +10,7 @@ type LessonFormProps = {
   submitLabel?: string
   submittingLabel?: string
   onCancel?: () => void
+  embedded?: boolean
 }
 
 function LessonForm({
@@ -21,6 +22,7 @@ function LessonForm({
   submitLabel = 'Add lesson',
   submittingLabel = 'Adding...',
   onCancel,
+  embedded = false,
 }: LessonFormProps) {
   const [title, setTitle] = useState(initialTitle)
   const [description, setDescription] = useState(initialDescription)
@@ -45,8 +47,11 @@ function LessonForm({
   }
 
   return (
-    <form className="card" onSubmit={handleSubmit}>
-      <h2>{heading}</h2>
+    <form
+      className={embedded ? 'form-block' : 'card'}
+      onSubmit={handleSubmit}
+    >
+      <h2 className="form-heading">{heading}</h2>
       <label>
         Title
         <input

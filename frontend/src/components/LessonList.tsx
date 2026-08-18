@@ -30,15 +30,20 @@ function LessonList({
   onDelete,
 }: LessonListProps) {
   if (lessons.length === 0) {
-    return <p className="empty-state">No lessons yet</p>
+    return (
+      <p className="empty-state lessons-empty">
+        No lessons yet. Add your first lesson using the form above.
+      </p>
+    )
   }
 
   return (
     <ul className="lesson-list">
       {lessons.map((lesson) => (
-        <li key={lesson.id} className="card lesson-item">
+        <li key={lesson.id} className="lesson-item">
           {editingId === lesson.id ? (
             <LessonForm
+              embedded
               initialTitle={lesson.title}
               initialDescription={lesson.description ?? ''}
               heading="Edit lesson"
@@ -59,6 +64,15 @@ function LessonList({
                     onToggleComplete(lesson, event.target.checked)
                   }
                 />
+                <span
+                  className={
+                    lesson.isCompleted
+                      ? 'lesson-status lesson-status-completed'
+                      : 'lesson-status lesson-status-incomplete'
+                  }
+                >
+                  {lesson.isCompleted ? 'Completed' : 'Incomplete'}
+                </span>
                 <span
                   className={
                     lesson.isCompleted
