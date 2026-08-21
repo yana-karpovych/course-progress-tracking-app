@@ -1,123 +1,122 @@
 import { Router } from 'express';
+import { asyncHandler } from '../middleware/asyncHandler.js';
 import { prisma } from '../prisma.js';
-import { calculateProgress } from '../utils/progress.js';
+import { formatCourseWithProgress } from '../utils/formatCourse.js';
+import { normalizeDescription } from '../utils/normalizeDescription.js';
+import { parseId } from '../utils/parseId.js';
+import { getTitleValidationError } from '../utils/validateTitle.js';
 
 const router = Router();
 
-function parseId(value) {
-  const id = Number(value);
-  if (!Number.isInteger(id) || id <= 0) {
-    return null;
-  }
-  return id;
-}
+router.get(
+  '/',
+  asyncHandler(async (_req, res) => {
+    const courses = await prisma.course.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: { lessons: true },
+    });
 
-function formatCourseWithProgress(course, includeLessons = false) {
-  const lessons = course.lessons ?? [];
-  const result = {
-    id: course.id,
-    title: course.title,
-    description: course.description,
-    createdAt: course.createdAt,
-    totalLessons: lessons.length,
-    completedLessons: lessons.filter((lesson) => lesson.isCompleted).length,
-    progress: calculateProgress(lessons),
-  };
+    res.json(courses.map((course) => formatCourseWithProgress(course)));
+  }),
+);
 
-  if (includeLessons) {
-    result.lessons = lessons;
-  }
+router.get(
+  '/:id',
+  asyncHandler(async (req, res) => {
+    const id = parseId(req.params.id);
+    if (id === null) {
+      return res.status(404).json({ error: 'Course not found' });
+    }
 
-  return result;
-}
+    const course = await prisma.course.findUnique({
+      where: { id },
+      include: { lessons: true },
+    });
 
-router.get('/', async (_req, res) => {
-  const courses = await prisma.course.findMany({
-    orderBy: { createdAt: 'desc' },
-    include: { lessons: true },
-  });
+    if (!course) {
+      return res.status(404).json({ error: 'Course not found' });
+    }
 
-  res.json(courses.map((course) => formatCourseWithProgress(course)));
-});
+    res.json(formatCourseWithProgress(course, true));
+  }),
+);
 
-router.get('/:id', async (req, res) => {
-  const id = parseId(req.params.id);
-  if (id === null) {
-    return res.status(404).json({ error: 'Course not found' });
-  }
+router.post(
+  '/',
+  asyncHandler(async (req, res) => {
+    const { title, description } = req.body;
+    const titleError = getTitleValidationError(title);
 
-  const course = await prisma.course.findUnique({
-    where: { id },
-    include: { lessons: true },
-  });
+    if (titleError) {
+      return res.status(400).json({ error: titleError });
+    }
 
-  if (!course) {
-    return res.status(404).json({ error: 'Course not found' });
-  }
+    const course = await prisma.course.create({
+      data: {
+        title: title.trim(),
+        description: normalizeDescription(description),
+      },
+      include: { lessons: true },
+    });
 
-  res.json(formatCourseWithProgress(course, true));
-});
+    res.status(201).json(formatCourseWithProgress(course));
+  }),
+);
 
-router.post('/', async (req, res) => {
-  const { title, description } = req.body;
+router.patch(
+  '/:id',
+  asyncHandler(async (req, res) => {
+    const id = parseId(req.params.id);
+    if (id === null) {
+      return res.status(404).json({ error: 'Course not found' });
+    }
 
-  if (typeof title !== 'string' || title.trim() === '') {
-    return res.status(400).json({ error: 'Title is required' });
-  }
+    const { title, description } = req.body;
+    const titleError = getTitleValidationError(title, { optional: true });
 
-  const course = await prisma.course.create({
-    data: { title: title.trim(), description: description ?? '' },
-  });
+    if (titleError) {
+      return res.status(400).json({ error: titleError });
+    }
 
-  res.status(201).json(course);
-});
+    const existing = await prisma.course.findUnique({ where: { id } });
+    if (!existing) {
+      return res.status(404).json({ error: 'Course not found' });
+    }
 
-router.patch('/:id', async (req, res) => {
-  const id = parseId(req.params.id);
-  if (id === null) {
-    return res.status(404).json({ error: 'Course not found' });
-  }
+    const data = {};
+    if (title !== undefined) {
+      data.title = title.trim();
+    }
+    if (description !== undefined) {
+      data.description = normalizeDescription(description);
+    }
 
-  const { title, description } = req.body;
+    const course = await prisma.course.update({
+      where: { id },
+      data,
+      include: { lessons: true },
+    });
 
-  if (title !== undefined && (typeof title !== 'string' || title.trim() === '')) {
-    return res.status(400).json({ error: 'Title is required' });
-  }
+    res.json(formatCourseWithProgress(course));
+  }),
+);
 
-  const existing = await prisma.course.findUnique({ where: { id } });
-  if (!existing) {
-    return res.status(404).json({ error: 'Course not found' });
-  }
+router.delete(
+  '/:id',
+  asyncHandler(async (req, res) => {
+    const id = parseId(req.params.id);
+    if (id === null) {
+      return res.status(404).json({ error: 'Course not found' });
+    }
 
-  const data = {};
-  if (title !== undefined) {
-    data.title = title.trim();
-  }
-  if (description !== undefined) {
-    data.description = description;
-  }
+    const existing = await prisma.course.findUnique({ where: { id } });
+    if (!existing) {
+      return res.status(404).json({ error: 'Course not found' });
+    }
 
-  const course = await prisma.course.update({
-    where: { id },
-    data,
-  });
-
-  res.json(course);
-});
-
-router.delete('/:id', async (req, res) => {
-  const id = parseId(req.params.id);
-  if (id === null) {
-    return res.status(404).json({ error: 'Course not found' });
-  }
-
-  const existing = await prisma.course.findUnique({ where: { id } });
-  if (!existing) {
-    return res.status(404).json({ error: 'Course not found' });
-  }
-
-  await prisma.course.delete({ where: { id } });
-  res.status(204).send();
-});
+    await prisma.course.delete({ where: { id } });
+    res.status(204).send();
+  }),
+);
 
 export default router;

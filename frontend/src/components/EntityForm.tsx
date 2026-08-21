@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 
-type LessonFormProps = {
+type EntityFormProps = {
   onSubmit: (data: { title: string; description: string }) => Promise<void>
   submitting?: boolean
   initialTitle?: string
@@ -13,17 +13,17 @@ type LessonFormProps = {
   embedded?: boolean
 }
 
-function LessonForm({
+function EntityForm({
   onSubmit,
   submitting = false,
   initialTitle = '',
   initialDescription = '',
-  heading = 'New lesson',
-  submitLabel = 'Add lesson',
-  submittingLabel = 'Adding...',
+  heading = 'New item',
+  submitLabel = 'Save',
+  submittingLabel = 'Saving...',
   onCancel,
   embedded = false,
-}: LessonFormProps) {
+}: EntityFormProps) {
   const [title, setTitle] = useState(initialTitle)
   const [description, setDescription] = useState(initialDescription)
 
@@ -83,4 +83,4 @@ function LessonForm({
   )
 }
 
-export default LessonForm
+export default EntityForm

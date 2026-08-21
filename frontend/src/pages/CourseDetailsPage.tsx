@@ -1,142 +1,104 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import {
-  ApiError,
   createLesson,
   deleteLesson,
   getCourse,
   updateLesson,
 } from '../api'
+import ConfirmDialog from '../components/ConfirmDialog'
+import EntityForm from '../components/EntityForm'
 import ErrorMessage from '../components/ErrorMessage'
-import LessonForm from '../components/LessonForm'
 import LessonList from '../components/LessonList'
 import LoadingMessage from '../components/LoadingMessage'
 import ProgressBar from '../components/ProgressBar'
-import type { Course, Lesson } from '../types'
+import { useAsyncAction } from '../hooks/useAsyncAction'
+import { useConfirm } from '../hooks/useConfirm'
+import { getPendingId } from '../hooks/getPendingId'
+import { useResourceLoader } from '../hooks/useResourceLoader'
+import type { Lesson } from '../types'
 
 function CourseDetailsPage() {
   const { id } = useParams()
   const courseId = Number(id)
 
-  const [course, setCourse] = useState<Course | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [loadError, setLoadError] = useState<string | null>(null)
-  const [actionError, setActionError] = useState<string | null>(null)
-  const [submitting, setSubmitting] = useState(false)
   const [editingLessonId, setEditingLessonId] = useState<number | null>(null)
-  const [updatingId, setUpdatingId] = useState<number | null>(null)
-  const [savingId, setSavingId] = useState<number | null>(null)
-  const [deletingId, setDeletingId] = useState<number | null>(null)
 
-  const loadCourse = useCallback(
-    async (showLoading = false) => {
-      if (!Number.isInteger(courseId) || courseId <= 0) {
-        setLoadError('Invalid course id')
-        setCourse(null)
-        setLoading(false)
-        return
-      }
+  const validateCourseId = useCallback(() => {
+    if (!Number.isInteger(courseId) || courseId <= 0) {
+      return 'Invalid course id'
+    }
+    return null
+  }, [courseId])
 
-      if (showLoading) {
-        setLoading(true)
-      }
-      setLoadError(null)
+  const loadCourse = useCallback(() => getCourse(courseId), [courseId])
 
-      try {
-        const data = await getCourse(courseId)
-        setCourse(data)
-      } catch (err) {
-        const message =
-          err instanceof ApiError ? err.message : 'Failed to load course'
-        setLoadError(message)
-        setCourse(null)
-      } finally {
-        setLoading(false)
-      }
-    },
-    [courseId],
-  )
+  const {
+    data: course,
+    loading,
+    error: loadError,
+    load,
+  } = useResourceLoader(loadCourse, {
+    errorFallback: 'Failed to load course',
+    validate: validateCourseId,
+  })
 
-  useEffect(() => {
-    loadCourse(true)
-  }, [loadCourse])
+  const { actionError, setActionError, run, isPending, pendingKey } =
+    useAsyncAction('Request failed')
+  const { requestConfirm, confirmRequest, handleConfirm, handleCancel } =
+    useConfirm()
 
   async function handleCreateLesson(data: {
     title: string
     description: string
   }) {
-    setSubmitting(true)
-    setActionError(null)
-
-    try {
-      await createLesson(courseId, data)
-      await loadCourse()
-    } catch (err) {
-      const message =
-        err instanceof ApiError ? err.message : 'Failed to add lesson'
-      setActionError(message)
-    } finally {
-      setSubmitting(false)
-    }
+    await run(() => createLesson(courseId, data), {
+      key: 'create',
+      errorFallback: 'Failed to add lesson',
+      onSuccess: () => load(),
+    })
   }
 
   async function handleSaveLessonEdit(
     lessonId: number,
     data: { title: string; description: string },
   ) {
-    setSavingId(lessonId)
-    setActionError(null)
-
-    try {
-      await updateLesson(lessonId, {
-        title: data.title,
-        description: data.description,
-      })
-      setEditingLessonId(null)
-      await loadCourse()
-    } catch (err) {
-      const message =
-        err instanceof ApiError ? err.message : 'Failed to update lesson'
-      setActionError(message)
-    } finally {
-      setSavingId(null)
-    }
+    await run(
+      () =>
+        updateLesson(lessonId, {
+          title: data.title,
+          description: data.description,
+        }),
+      {
+        key: `save-${lessonId}`,
+        errorFallback: 'Failed to update lesson',
+        onSuccess: () => {
+          setEditingLessonId(null)
+          return load()
+        },
+      },
+    )
   }
 
   async function handleToggleComplete(lesson: Lesson, isCompleted: boolean) {
-    setUpdatingId(lesson.id)
-    setActionError(null)
-
-    try {
-      await updateLesson(lesson.id, { isCompleted })
-      await loadCourse()
-    } catch (err) {
-      const message =
-        err instanceof ApiError ? err.message : 'Failed to update lesson'
-      setActionError(message)
-    } finally {
-      setUpdatingId(null)
-    }
+    await run(() => updateLesson(lesson.id, { isCompleted }), {
+      key: `toggle-${lesson.id}`,
+      errorFallback: 'Failed to update lesson',
+      onSuccess: () => load(),
+    })
   }
 
   async function handleDeleteLesson(lessonId: number) {
-    if (!window.confirm('Delete this lesson?')) {
+    const confirmed = await requestConfirm('Delete this lesson?')
+    if (!confirmed) {
       return
     }
 
-    setDeletingId(lessonId)
-    setActionError(null)
-
-    try {
-      await deleteLesson(lessonId)
-      await loadCourse()
-    } catch (err) {
-      const message =
-        err instanceof ApiError ? err.message : 'Failed to delete lesson'
-      setActionError(message)
-    } finally {
-      setDeletingId(null)
-    }
+    await run(() => deleteLesson(lessonId), {
+      key: `delete-${lessonId}`,
+      errorFallback: 'Failed to delete lesson',
+      onSuccess: () => load(),
+    })
   }
 
   const lessons = course?.lessons ?? []
@@ -144,6 +106,16 @@ function CourseDetailsPage() {
 
   return (
     <main>
+      {confirmRequest && (
+        <ConfirmDialog
+          message={confirmRequest.message}
+          confirmLabel={confirmRequest.confirmLabel}
+          cancelLabel={confirmRequest.cancelLabel}
+          onConfirm={handleConfirm}
+          onCancel={handleCancel}
+        />
+      )}
+
       <p>
         <Link to="/">← Back to courses</Link>
       </p>
@@ -155,7 +127,7 @@ function CourseDetailsPage() {
           <h1>Course unavailable</h1>
           <ErrorMessage
             message={loadError}
-            onRetry={canRetryLoad ? () => loadCourse(true) : undefined}
+            onRetry={canRetryLoad ? () => load(true) : undefined}
           />
         </>
       )}
@@ -180,7 +152,7 @@ function CourseDetailsPage() {
               message={actionError}
               onRetry={() => {
                 setActionError(null)
-                loadCourse()
+                load()
               }}
             />
           )}
@@ -193,19 +165,22 @@ function CourseDetailsPage() {
 
             <div className="lessons-panel card">
               {editingLessonId === null && (
-                <LessonForm
+                <EntityForm
                   embedded
+                  heading="New lesson"
+                  submitLabel="Add lesson"
+                  submittingLabel="Adding..."
                   onSubmit={handleCreateLesson}
-                  submitting={submitting}
+                  submitting={isPending('create')}
                 />
               )}
 
               <LessonList
                 lessons={lessons}
                 editingId={editingLessonId}
-                updatingId={updatingId}
-                savingId={savingId}
-                deletingId={deletingId}
+                updatingId={getPendingId('toggle', pendingKey)}
+                savingId={getPendingId('save', pendingKey)}
+                deletingId={getPendingId('delete', pendingKey)}
                 onStartEdit={setEditingLessonId}
                 onCancelEdit={() => setEditingLessonId(null)}
                 onSaveEdit={handleSaveLessonEdit}

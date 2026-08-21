@@ -14,7 +14,7 @@ export type Lesson = {
   courseId: number
   title: string
   isCompleted: boolean
-  description?: string
+  description: string
   createdAt: string
 }
 

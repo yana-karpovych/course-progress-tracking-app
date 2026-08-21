@@ -74,10 +74,6 @@ export function deleteCourse(id: number): Promise<void> {
   return request<void>(`/courses/${id}`, { method: 'DELETE' })
 }
 
-export function getLessons(courseId: number): Promise<Lesson[]> {
-  return request<Lesson[]>(`/courses/${courseId}/lessons`)
-}
-
 export function createLesson(
   courseId: number,
   data: CreateLessonInput,

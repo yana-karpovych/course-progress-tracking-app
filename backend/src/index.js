@@ -1,5 +1,6 @@
 import cors from 'cors';
 import express from 'express';
+import { errorHandler } from './middleware/errorHandler.js';
 import coursesRouter from './routes/courses.js';
 import { courseLessonsRouter, lessonsRouter } from './routes/lessons.js';
 
@@ -16,6 +17,8 @@ app.get('/health', (_req, res) => {
 app.use('/courses', coursesRouter);
 app.use('/courses/:courseId/lessons', courseLessonsRouter);
 app.use('/lessons', lessonsRouter);
+
+app.use(errorHandler);
 
 app.listen(PORT, () => {
   console.log(`Server started on port ${PORT}`);

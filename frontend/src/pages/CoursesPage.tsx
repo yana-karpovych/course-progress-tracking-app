@@ -1,113 +1,88 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import {
-  ApiError,
-  createCourse,
-  deleteCourse,
-  getCourses,
-  updateCourse,
-} from '../api'
-import CourseForm from '../components/CourseForm'
+import { createCourse, deleteCourse, getCourses, updateCourse } from '../api'
+import ConfirmDialog from '../components/ConfirmDialog'
+import EntityForm from '../components/EntityForm'
 import ErrorMessage from '../components/ErrorMessage'
 import LoadingMessage from '../components/LoadingMessage'
 import ProgressBar from '../components/ProgressBar'
-import type { Course } from '../types'
+import { useAsyncAction } from '../hooks/useAsyncAction'
+import { useConfirm } from '../hooks/useConfirm'
+import { useResourceLoader } from '../hooks/useResourceLoader'
 
 function CoursesPage() {
-  const [courses, setCourses] = useState<Course[]>([])
-  const [loading, setLoading] = useState(true)
-  const [hasLoaded, setHasLoaded] = useState(false)
-  const [loadError, setLoadError] = useState<string | null>(null)
-  const [actionError, setActionError] = useState<string | null>(null)
-  const [submitting, setSubmitting] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
-  const [savingId, setSavingId] = useState<number | null>(null)
-  const [deletingId, setDeletingId] = useState<number | null>(null)
 
-  const loadCourses = useCallback(async (showLoading = false) => {
-    if (showLoading) {
-      setLoading(true)
-    }
-    setLoadError(null)
+  const {
+    data: courses,
+    loading,
+    hasLoaded,
+    error: loadError,
+    load,
+  } = useResourceLoader(getCourses, {
+    errorFallback: 'Failed to load courses',
+  })
 
-    try {
-      const data = await getCourses()
-      setCourses(data)
-      setHasLoaded(true)
-    } catch (err) {
-      const message =
-        err instanceof ApiError ? err.message : 'Failed to load courses'
-      setLoadError(message)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+  const { actionError, setActionError, run, isPending } = useAsyncAction(
+    'Request failed',
+  )
+  const { requestConfirm, confirmRequest, handleConfirm, handleCancel } =
+    useConfirm()
 
-  useEffect(() => {
-    loadCourses(true)
-  }, [loadCourses])
+  const courseList = courses ?? []
 
   async function handleCreate(data: { title: string; description: string }) {
-    setSubmitting(true)
-    setActionError(null)
-
-    try {
-      await createCourse(data)
-      await loadCourses()
-    } catch (err) {
-      const message =
-        err instanceof ApiError ? err.message : 'Failed to create course'
-      setActionError(message)
-    } finally {
-      setSubmitting(false)
-    }
+    await run(() => createCourse(data), {
+      key: 'create',
+      errorFallback: 'Failed to create course',
+      onSuccess: () => load(),
+    })
   }
 
   async function handleUpdate(
     id: number,
     data: { title: string; description: string },
   ) {
-    setSavingId(id)
-    setActionError(null)
-
-    try {
-      await updateCourse(id, data)
-      setEditingId(null)
-      await loadCourses()
-    } catch (err) {
-      const message =
-        err instanceof ApiError ? err.message : 'Failed to update course'
-      setActionError(message)
-    } finally {
-      setSavingId(null)
-    }
+    await run(() => updateCourse(id, data), {
+      key: id,
+      errorFallback: 'Failed to update course',
+      onSuccess: () => {
+        setEditingId(null)
+        return load()
+      },
+    })
   }
 
   async function handleDelete(id: number) {
-    if (!window.confirm('Delete this course and all its lessons?')) {
+    const confirmed = await requestConfirm(
+      'Delete this course and all its lessons?',
+    )
+    if (!confirmed) {
       return
     }
 
-    setDeletingId(id)
-    setActionError(null)
-
-    try {
-      await deleteCourse(id)
-      await loadCourses()
-    } catch (err) {
-      const message =
-        err instanceof ApiError ? err.message : 'Failed to delete course'
-      setActionError(message)
-    } finally {
-      setDeletingId(null)
-    }
+    await run(() => deleteCourse(id), {
+      key: `delete-${id}`,
+      errorFallback: 'Failed to delete course',
+      onSuccess: () => load(),
+    })
   }
 
   const showForm = hasLoaded && !loadError && editingId === null
-  const showEmptyState = hasLoaded && !loadError && courses.length === 0
+  const showEmptyState = hasLoaded && !loadError && courseList.length === 0
 
   return (
     <main>
+      {confirmRequest && (
+        <ConfirmDialog
+          message={confirmRequest.message}
+          confirmLabel={confirmRequest.confirmLabel}
+          cancelLabel={confirmRequest.cancelLabel}
+          onConfirm={handleConfirm}
+          onCancel={handleCancel}
+        />
+      )}
+
       <header className="page-header">
         <h1>Courses</h1>
         <p className="page-intro">
@@ -118,13 +93,19 @@ function CoursesPage() {
       {loading && <LoadingMessage />}
 
       {loadError && (
-        <ErrorMessage message={loadError} onRetry={() => loadCourses(true)} />
+        <ErrorMessage message={loadError} onRetry={() => load(true)} />
       )}
 
       {showForm && (
         <section className="section-block">
           <h2 className="section-title">Add a course</h2>
-          <CourseForm onSubmit={handleCreate} submitting={submitting} />
+          <EntityForm
+            heading="New course"
+            submitLabel="Create course"
+            submittingLabel="Creating..."
+            onSubmit={handleCreate}
+            submitting={isPending('create')}
+          />
         </section>
       )}
 
@@ -133,7 +114,7 @@ function CoursesPage() {
           message={actionError}
           onRetry={() => {
             setActionError(null)
-            loadCourses()
+            load()
           }}
         />
       )}
@@ -144,20 +125,20 @@ function CoursesPage() {
         </div>
       )}
 
-      {hasLoaded && courses.length > 0 && (
+      {hasLoaded && courseList.length > 0 && (
         <section className="section-block">
           <h2 className="section-title">Your courses</h2>
           <ul className="course-list">
-            {courses.map((course) => (
+            {courseList.map((course) => (
               <li key={course.id} className="card course-card">
                 {editingId === course.id ? (
-                  <CourseForm
+                  <EntityForm
                     initialTitle={course.title}
                     initialDescription={course.description}
                     heading="Edit course"
                     submitLabel="Save"
                     submittingLabel="Saving..."
-                    submitting={savingId === course.id}
+                    submitting={isPending(course.id)}
                     embedded
                     onCancel={() => setEditingId(null)}
                     onSubmit={(data) => handleUpdate(course.id, data)}
@@ -181,9 +162,11 @@ function CoursesPage() {
                       <button
                         type="button"
                         onClick={() => handleDelete(course.id)}
-                        disabled={deletingId === course.id}
+                        disabled={isPending(`delete-${course.id}`)}
                       >
-                        {deletingId === course.id ? 'Deleting...' : 'Delete'}
+                        {isPending(`delete-${course.id}`)
+                          ? 'Deleting...'
+                          : 'Delete'}
                       </button>
                     </div>
                   </>

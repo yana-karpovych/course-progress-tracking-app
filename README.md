@@ -1,5 +1,7 @@
 # Course Progress Tracker
 
+Live Demo: [link]
+
 Course Progress Tracker is a full-stack React + TypeScript application for managing courses and tracking lesson completion.
 
 The application allows users to create, edit, and delete courses and lessons, mark lessons as complete, and view progress calculated on the backend. It interacts with a REST API backed by PostgreSQL, demonstrating asynchronous requests, state management, and modern full-stack development practices.

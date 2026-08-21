@@ -1,5 +1,5 @@
 import type { Lesson } from '../types'
-import LessonForm from './LessonForm'
+import EntityForm from './EntityForm'
 
 type LessonListProps = {
   lessons: Lesson[]
@@ -42,10 +42,10 @@ function LessonList({
       {lessons.map((lesson) => (
         <li key={lesson.id} className="lesson-item">
           {editingId === lesson.id ? (
-            <LessonForm
+            <EntityForm
               embedded
               initialTitle={lesson.title}
-              initialDescription={lesson.description ?? ''}
+              initialDescription={lesson.description}
               heading="Edit lesson"
               submitLabel="Save"
               submittingLabel="Saving..."

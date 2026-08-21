@@ -377,3 +377,35 @@ label {
   border: 1px dashed var(--color-border);
   box-shadow: none;
 }
+
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.confirm-dialog {
+  width: min(100%, 24rem);
+  margin: 0;
+}
+
+.confirm-dialog p {
+  margin: 0 0 1rem;
+}
+
+.button-danger {
+  background: var(--color-danger);
+  border-color: var(--color-danger);
+  color: #ffffff;
+}
+
+.button-danger:hover:not(:disabled) {
+  background: var(--color-danger-hover);
+  border-color: var(--color-danger-hover);
+  color: #ffffff;
+}
