@@ -1,6 +1,7 @@
 # Course Progress Tracker
 
-Live Demo: [link]
+**Live Demo:** [Open application](https://course-progress-tracking-app.vercel.app/)  
+**GitHub:** [View source code](https://github.com/yana-karpovych/course-progress-tracking-app)
 
 Course Progress Tracker is a full-stack React + TypeScript application for managing courses and tracking lesson completion.
 
@@ -36,6 +37,9 @@ The application allows users to create, edit, and delete courses and lessons, ma
 - Docker
 - Docker Compose
 - nginx
+- Neon
+- Render
+- Vercel
 
 ### Development & Tooling
 
@@ -44,11 +48,19 @@ The application allows users to create, edit, and delete courses and lessons, ma
 
 ## Getting Started
 
+### Live Demo
+
+The application is deployed and available online:
+
+[Open application](https://course-progress-tracking-app.vercel.app/)
+
+### Run Locally
+
 ### Clone the repository
 
 ```bash
-git clone <repository-url>
-cd course-progress-tracker
+git clone https://github.com/yana-karpovych/course-progress-tracking-app.git
+cd course-progress-tracking-app
 ```
 
 ### Run with Docker
